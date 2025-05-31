@@ -162,6 +162,9 @@ def lambda_handler(event, context):
                 # Ensure all column names are stripped of whitespace
                 header = [h.strip() for h in reader.fieldnames]
                 data_rows = [{k.strip(): v.strip() if v is not None else '' for k, v in row.items()} for row in reader]
+                # Extract contact person and company name from the first row (assuming it's present)
+                contact_person_name = data_rows[0].get('ContactPerson', 'Unknown') if data_rows else 'Unknown'
+                company_name = data_rows[0].get('CompanyName', 'Unknown') if data_rows else 'Unknown'
 
             elif file_key.lower().endswith('.xlsx'):
                 # This part requires the 'pandas' library as a Lambda Layer
@@ -228,15 +231,17 @@ def lambda_handler(event, context):
             # Send email to management
             management_subject = f"New File Upload Notification: {file_key}"
             management_body_text = (
-                f"Dear Management,\n\nA new file '{file_key}' (size: {file_size} bytes) was uploaded by user '{user_id}' "
-                f"at {event_time}. It contained {processed_records_count} records.\n\n"
+                f"Dear Management,\n\nA new file '{file_key}' (size: {file_size} bytes) was uploaded at {event_time}. "
+                f"It contained {processed_records_count} records.\n\n"
+                f"The file was submitted by {contact_person_name} from the company {company_name}.\n\n"
                 f"Data has been extracted and stored in the '{DYNAMODB_TABLE_NAME}' DynamoDB table.\n\n"
                 f"Regards,\nXYZ Logistics Automation System"
             )
             management_body_html = (
                 f"<p>Dear Management,</p>"
-                f"<p>A new file '<b>{file_key}</b>' (size: {file_size} bytes) was uploaded by user '<b>{user_id}</b>' "
-                f"at {event_time}. It contained {processed_records_count} records.</p>"
+                f"<p>A new file '<b>{file_key}</b>' (size: {file_size} bytes) was uploaded at {event_time}. "
+                f"It contained {processed_records_count} records.</p>"
+                f"<p>The file was submitted by <b>{contact_person_name}</b> from the company <b>{company_name}</b>.</p>"
                 f"<p>Data has been extracted and stored in the '<b>{DYNAMODB_TABLE_NAME}</b>' DynamoDB table.</p>"
                 f"<p>Regards,<br/>XYZ Logistics Automation System</p>"
             )
@@ -248,6 +253,7 @@ def lambda_handler(event, context):
                 f"Dear Uploader,\n\nWe have successfully received and processed your file "
                 f"'{file_key}' (size: {file_size} bytes) uploaded at {event_time}. "
                 f"It contained {processed_records_count} records.\n\n"
+                f"This file was uploaded by {contact_person_name} from the company {company_name}.\n\n"
                 f"Thank you for your submission.\n\n"
                 f"Regards,\nXYZ Logistics Automation Team"
             )
@@ -256,6 +262,7 @@ def lambda_handler(event, context):
                 f"<p>We have successfully received and processed your file "
                 f"'<b>{file_key}</b>' (size: {file_size} bytes) uploaded at {event_time}. "
                 f"It contained {processed_records_count} records.</p>"
+                f"<p>This file was uploaded by <b>{contact_person_name}</b> from the company <b>{company_name}</b>.</p>"
                 f"<p>Thank you for your submission.</p>"
                 f"<p>Regards,<br/>XYZ Logistics Automation Team</p>"
             )
